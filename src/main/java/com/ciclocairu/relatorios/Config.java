@@ -12,11 +12,11 @@ public class Config {
 	
 	public static ReportConfigurations create() {
 		LOG.info("Iniciando configuraçoes iniciais dos relatórios");
-		String path = separator + separator + "10.69.1.13" 
-					+ separator + "g$" + separator + "relatorios";
+		/*String path = separator + separator + "10.69.1.13" 
+					+ separator + "g$" + separator + "relatorios";*/
 		ReportConfigurationsImpl config = new ReportConfigurationsImpl();
 		
-		//String path = System.getProperty("user.home") + separator + "reports";
+		String path = System.getProperty("user.home") + separator + "reports";
 		String generatedBasePath = path + separator + "generated";
 		
 		config.setBasePath(path);
