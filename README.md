@@ -165,3 +165,20 @@ public class ReportConfigurationsImpl implements ReportConfigurations {
     return config;
 	}
 ```
+
+# Parametros do relatorio
+###### Possuem a seguinte estrutura
+
+```
+public class ReportParameters {
+
+	public String name; //nome do parametro
+	public Object value; //valor
+	public String type; //tipo do parametro
+	public String reportType; //tipo dele no relatório. normalmente sempre serão iguais ao type
+	
+	//getters setters
+	}
+```
+Basta Instanciar e passar ele para o servido que gera o relattório (vide exemplos acima)
+`adiantamentoRelatoriosProperties.setParameters(parametros);`
