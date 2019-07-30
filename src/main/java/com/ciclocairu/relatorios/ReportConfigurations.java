@@ -7,6 +7,10 @@ public interface ReportConfigurations {
 	
 	String getImagesPath();
 	
+	default boolean deleteAfterDownload() {
+		return false;
+	}
+	
 	default String getTypeFileOutput() {
 		return ".pdf";
 	}

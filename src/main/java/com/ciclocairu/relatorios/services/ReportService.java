@@ -30,6 +30,7 @@ import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import net.sf.jasperreports.engine.export.JRPdfExporter;
 import net.sf.jasperreports.engine.util.JRSaver;
 import net.sf.jasperreports.export.SimpleExporterInput;
@@ -50,10 +51,18 @@ public class ReportService {
 	private SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
 
 	public String generateReport(ReportProperties properties) {
-		return generateReport(properties, null);
+		return generateReport(properties, null, null);
+	}
+
+	public String generateReport(ReportProperties properties, List<?> data) {
+		return generateReport(properties, data, null);
 	}
 
 	public String generateReport(ReportProperties properties, HttpServletResponse response) {
+		return generateReport(properties, null, response);
+	}
+
+	public String generateReport(ReportProperties properties, List<?> data, HttpServletResponse response) {
 
 		try {
 			Map<String, Object> params = toParamsMap(properties.getReportParams());
@@ -85,7 +94,12 @@ public class ReportService {
 			params.put("imagesPath", config.getImagesPath());
 
 			//gera relatório
-			JasperPrint jasperPrint = JasperFillManager.fillReport(jasper, params, properties.getReportConnection());
+			JasperPrint jasperPrint;
+			if(data == null)
+				jasperPrint= JasperFillManager.fillReport(jasper, params, properties.getReportConnection());
+			else
+				jasperPrint = JasperFillManager.fillReport(jasper, params, new JRBeanCollectionDataSource(data));
+
 
 			//Converte em PDF
 			String generatedpath = exportPdf(properties, jasperPrint);
@@ -95,7 +109,7 @@ public class ReportService {
 
 
 				File output = new File(generatedpath);
-				
+
 				try(InputStream is = new FileInputStream(output);OutputStream out = response.getOutputStream()){
 					response.reset();
 					response.setContentType("application/pdf");
@@ -104,6 +118,12 @@ public class ReportService {
 					response.addHeader("Content-Disposition", "inline; filename="+properties.getFileReportName()+".pdf");
 					IOUtils.copy(is, out);
 					out.flush();
+
+
+				}finally {
+
+					if(config.deleteAfterDownload())
+						file.delete();
 
 
 				}

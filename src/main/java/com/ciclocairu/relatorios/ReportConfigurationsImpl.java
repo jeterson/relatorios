@@ -5,6 +5,7 @@ public class ReportConfigurationsImpl implements ReportConfigurations {
 	private String basePath;
 	private String generatedReportsBasePath;
 	private String imagesPath;
+	private boolean deleteAfterDownload = false;
 	
 	public void setBasePath(String basePath) {
 		this.basePath = basePath;
@@ -20,6 +21,15 @@ public class ReportConfigurationsImpl implements ReportConfigurations {
 		return this.basePath;
 	}
 
+	
+	@Override
+	public boolean deleteAfterDownload() {
+		return deleteAfterDownload;
+	}
+	
+	public void setDeleteAfterDownload(boolean deleteAfterDownload) {
+		this.deleteAfterDownload = deleteAfterDownload;
+	}
 
 
 	@Override
