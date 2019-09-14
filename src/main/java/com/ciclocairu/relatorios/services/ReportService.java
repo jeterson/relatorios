@@ -5,6 +5,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -39,6 +41,7 @@ import net.sf.jasperreports.export.SimplePdfExporterConfiguration;
 import net.sf.jasperreports.export.SimplePdfReportConfiguration;
 
 @Service
+
 public class ReportService {
 
 	public static final String separator = System.getProperty("file.separator");
@@ -64,6 +67,7 @@ public class ReportService {
 
 	public String generateReport(ReportProperties properties, List<?> data, HttpServletResponse response) {
 
+		Connection conn = properties.getReportConnection();
 		try {
 			Map<String, Object> params = toParamsMap(properties.getReportParams());
 
@@ -96,7 +100,7 @@ public class ReportService {
 			//gera relatório
 			JasperPrint jasperPrint;
 			if(data == null)
-				jasperPrint= JasperFillManager.fillReport(jasper, params, properties.getReportConnection());
+				jasperPrint= JasperFillManager.fillReport(jasper, params, conn);
 			else
 				jasperPrint = JasperFillManager.fillReport(jasper, params, new JRBeanCollectionDataSource(data));
 
@@ -131,6 +135,13 @@ public class ReportService {
 			return generatedpath;
 		}catch (JRException | IOException e) {
 			throw new GenerateReportException(e.getMessage(), e.getCause());
+		}
+		finally {
+			try {
+				conn.close();
+			} catch (SQLException e) {
+				LOG.error(e.getMessage());
+			}
 		}
 
 
