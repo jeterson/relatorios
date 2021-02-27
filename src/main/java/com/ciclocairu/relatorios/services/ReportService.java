@@ -118,7 +118,7 @@ public class ReportService {
 					response.reset();
 					response.setContentType("application/pdf");
 					response.setContentLength((int) output.length());		    	
-					response.addHeader("Access-Control-Allow-Origin", "*");
+					//response.addHeader("Access-Control-Allow-Origin", "*");
 					response.addHeader("Content-Disposition", "inline; filename="+properties.getFileReportName()+".pdf");
 					IOUtils.copy(is, out);
 					out.flush();
