@@ -166,7 +166,7 @@ public class ReportService {
 
 		SimplePdfExporterConfiguration exportConfig
 		= new SimplePdfExporterConfiguration();
-		exportConfig.setMetadataAuthor("Ciclo Cairu Report App");				
+		exportConfig.setMetadataAuthor("Jeterson Miranda Gomes");				
 
 		exporter.setConfiguration(reportConfig);
 		exporter.setConfiguration(exportConfig);
