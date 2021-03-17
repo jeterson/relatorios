@@ -26,14 +26,31 @@ import com.ciclocairu.relatorios.ReportConfigurations;
 import com.ciclocairu.relatorios.enums.ParamType;
 import com.ciclocairu.relatorios.model.ReportParameters;
 import com.ciclocairu.relatorios.model.ReportProperties;
+import com.ibm.icu.util.StringTokenizer;
 
+import net.sf.jasperreports.crosstabs.JRCrosstab;
+import net.sf.jasperreports.engine.JRBreak;
+import net.sf.jasperreports.engine.JRChart;
+import net.sf.jasperreports.engine.JRComponentElement;
+import net.sf.jasperreports.engine.JRElementGroup;
+import net.sf.jasperreports.engine.JREllipse;
 import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRFrame;
+import net.sf.jasperreports.engine.JRGenericElement;
+import net.sf.jasperreports.engine.JRImage;
+import net.sf.jasperreports.engine.JRLine;
+import net.sf.jasperreports.engine.JRRectangle;
+import net.sf.jasperreports.engine.JRStaticText;
+import net.sf.jasperreports.engine.JRSubreport;
+import net.sf.jasperreports.engine.JRTextField;
+import net.sf.jasperreports.engine.JRVisitor;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import net.sf.jasperreports.engine.export.JRPdfExporter;
+import net.sf.jasperreports.engine.util.JRElementsVisitor;
 import net.sf.jasperreports.engine.util.JRSaver;
 import net.sf.jasperreports.export.SimpleExporterInput;
 import net.sf.jasperreports.export.SimpleOutputStreamExporterOutput;
@@ -41,11 +58,11 @@ import net.sf.jasperreports.export.SimplePdfExporterConfiguration;
 import net.sf.jasperreports.export.SimplePdfReportConfiguration;
 
 @Service
-
 public class ReportService {
 
 	public static final String separator = System.getProperty("file.separator");
 	private static final Logger LOG = LoggerFactory.getLogger(ReportService.class);
+	private Throwable           subReportException  = null;
 
 	@Autowired
 	private ReportConfigurations config;
@@ -92,7 +109,8 @@ public class ReportService {
 			InputStream reportStream = new FileInputStream(file);
 
 			//salva relatorio compilado no disco
-			JasperReport jasper =  JasperCompileManager.compileReport(reportStream);
+			//JasperReport jasper =  JasperCompileManager.compileReport(reportStream);
+			JasperReport jasper = compileReport(reportStream, pathCompiledJasper, properties);
 			JRSaver.saveObject(jasper, pathCompiledJasper + separator + config.generatedJasperFileName());
 			params.put("CONTEXT", config.getBasePath());
 			params.put("imagesPath", config.getImagesPath());
@@ -147,6 +165,92 @@ public class ReportService {
 
 
 	}
+
+
+	/**
+	 * Recursively compile report and subreports
+	 */
+	public JasperReport compileReport(InputStream reportStream, String compiledPath, ReportProperties properties) {
+
+		try {
+			JasperReport jasperReport = JasperCompileManager.compileReport(reportStream);
+			JRSaver.saveObject(jasperReport,  compiledPath + separator + config.generatedJasperFileName());
+			// toLog("Saving compiled report to: " + reportsPath + reportName + ".jasper");
+			//Compile sub reports
+			JRElementsVisitor.visitReport(jasperReport, new JRVisitor(){
+				@Override
+				public void visitBreak(JRBreak breakElement){}
+
+				@Override
+				public void visitChart(JRChart chart){}
+
+				@Override
+				public void visitCrosstab(JRCrosstab crosstab){}
+
+				@Override
+				public void visitElementGroup(JRElementGroup elementGroup){}
+
+				@Override
+				public void visitEllipse(JREllipse ellipse){}
+
+				@Override
+				public void visitFrame(JRFrame frame){}
+
+				@Override
+				public void visitImage(JRImage image){}
+
+				@Override
+				public void visitLine(JRLine line){}
+
+				@Override
+				public void visitRectangle(JRRectangle rectangle){}
+
+				@Override
+				public void visitStaticText(JRStaticText staticText){}
+
+				@Override
+				public void visitSubreport(JRSubreport subreport){
+					try{
+						String expression = subreport.getExpression().getText().replace(".jasper", "");
+						StringTokenizer st = new StringTokenizer(expression, "\"/");
+						String subReportName = null;
+						while(st.hasMoreTokens())
+							subReportName = st.nextToken();
+
+						String path = config.getBasePath() 
+								+ separator + properties.getFolderReportsName() 
+								+ separator + subReportName 
+								+ config.getTypeFileInput();
+
+						File file = new File(path);
+						if(!file.exists()) {
+							throw new IOException("Arquivo de relatório não existe em " + path);
+						}
+						//carregar relatorio em memoria
+						InputStream reportStream = new FileInputStream(file);
+						compileReport(reportStream, compiledPath, properties);
+					}
+					catch(Throwable e){
+						subReportException = e;
+					}
+				}
+				@Override
+				public void visitTextField(JRTextField textField){}
+
+				@Override
+				public void visitComponentElement(JRComponentElement componentElement){}
+
+				@Override
+				public void visitGenericElement(JRGenericElement element){}
+			});
+			if(subReportException != null) throw new RuntimeException(subReportException);
+			return jasperReport;
+			
+		}catch (Exception e) {
+			throw new RuntimeException("Erro ao compilar relatório principal " + compiledPath);
+		}
+	}
+
 
 	private String exportPdf(ReportProperties properties, JasperPrint jasperPrint) throws JRException {
 		JRPdfExporter exporter = new JRPdfExporter();	
